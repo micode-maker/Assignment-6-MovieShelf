@@ -1,61 +1,55 @@
-import MovieGrid from '../components/MovieGrid';
+import { useState, useEffect } from "react";
+import MovieGrid from "../components/MovieGrid";
+import { getPopularMovies } from "../services/movieService";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorMessage from "../components/ErrorMessage";
 
-// Static movie data for template
-const staticMovies = [
-  {
-    id: 1,
-    title: "The Shawshank Redemption",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 9.3,
-    release_date: "1994-09-23"
-  },
-  {
-    id: 2,
-    title: "The Godfather",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 9.2,
-    release_date: "1972-03-14"
-  },
-  {
-    id: 3,
-    title: "The Dark Knight",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 9.0,
-    release_date: "2008-07-18"
-  },
-  {
-    id: 4,
-    title: "Pulp Fiction",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 8.9,
-    release_date: "1994-10-14"
-  },
-  {
-    id: 5,
-    title: "Forrest Gump",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 8.8,
-    release_date: "1994-06-23"
-  },
-  {
-    id: 6,
-    title: "Inception",
-    poster_path: "/placeholder-poster.jpg",
-    vote_average: 8.7,
-    release_date: "2010-07-16"
-  }
-];
+function Home({ movies, setMovies, searchQuery, searchLoading, searchError }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-function Home() {
+  useEffect(() => {
+    if (movies.length === 0 && !searchQuery.trim()) {
+      async function loadMovies() {
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await getPopularMovies();
+          setMovies(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      loadMovies();
+    }
+  }, [movies, setMovies, searchQuery]);
+
+  if (searchQuery.trim() && searchLoading) return <LoadingSpinner message="Searching movies..." />;
+  if (searchQuery.trim() && searchError) return <ErrorMessage message={searchError} />;
+  if (loading) return <LoadingSpinner message="Loading movies..." />;
+  if (error) return <ErrorMessage message={error} />;
+
+  const isSearching = searchQuery.trim().length > 0;
+
   return (
     <main className="main-content">
       <div className="content-header">
-        <h2>Popular Movies</h2>
-        <p>Discover and save your favorite films</p>
+        <h2>{isSearching ? "Search Results" : "Popular Movies"}</h2>
+        <p>{isSearching ? "Browse movies matching your search" : "Discover and save your favorite films"}</p>
       </div>
-      <MovieGrid movies={staticMovies} />
+
+      {movies.length > 0 ? (
+        <MovieGrid movies={movies} />
+      ) : (
+        <div className="empty-state">
+          <p>No movies found. Try again.</p>
+        </div>
+      )}
     </main>
   );
-};
+}
 
 export default Home;
